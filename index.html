@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Login - Smart Irrigation System</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="auth-page">
+
+<div class="auth-wrap">
+  <section class="auth-side">
+    <div class="logo-row">
+      <svg width="34" height="34" viewBox="0 0 24 24" aria-hidden="true"><path fill="#7fd19b" d="M12 2.5C9 6.6 6 10 6 13.5a6 6 0 0 0 12 0C18 10 15 6.6 12 2.5z"/></svg>
+      <span>Smart Irrigation System</span>
+    </div>
+
+    <div class="auth-intro">
+      <h1>Water the crop when it needs it, not when someone remembers.</h1>
+      <p>An Arduino based controller that reads soil moisture, temperature and light, learns when the
+        farmer usually waters each bed, and then runs the pumps on its own while keeping an eye on plant health.</p>
+      <ul class="feature-list">
+        <li>Learns watering times from the farmer's manual use</li>
+        <li>Two pump zones with dry-run and timeout protection</li>
+        <li>Plant health score and crop check for every zone</li>
+        <li>Works with real sensors or in demo mode</li>
+      </ul>
+    </div>
+
+    <small class="auth-foot">Mini project · Arduino UNO + HTML / CSS / JavaScript</small>
+  </section>
+
+  <main class="auth-main">
+    <div class="auth-card">
+      <h2>Welcome</h2>
+      <p class="muted">Log in to open the control panel.</p>
+
+      <div class="auth-tabs">
+        <button type="button" class="active" data-tab="login">Login</button>
+        <button type="button" data-tab="register">New account</button>
+      </div>
+
+      <form id="loginForm" autocomplete="on">
+        <div class="field">
+          <label for="lUser">Username</label>
+          <input type="text" id="lUser" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label for="lPass">Password</label>
+          <input type="password" id="lPass" autocomplete="current-password" required>
+        </div>
+        <label class="chk"><input type="checkbox" id="lRemember"> Keep me logged in on this computer</label>
+        <button type="submit" class="btn full">Log in</button>
+        <p class="err" id="loginErr" role="alert"></p>
+        <p class="hint">Trying it out? Use the demo account: <b>demo</b> / <b>demo123</b>
+          <button type="button" class="link" id="fillDemo">fill in</button></p>
+      </form>
+
+      <form id="registerForm" hidden>
+        <div class="field">
+          <label for="rName">Full name</label>
+          <input type="text" id="rName" autocomplete="name" required>
+        </div>
+        <div class="field">
+          <label for="rUser">Username</label>
+          <input type="text" id="rUser" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label for="rPass">Password <span class="muted small">(min 6 characters)</span></label>
+          <input type="password" id="rPass" autocomplete="new-password" required>
+        </div>
+        <div class="field">
+          <label for="rPass2">Confirm password</label>
+          <input type="password" id="rPass2" autocomplete="new-password" required>
+        </div>
+        <button type="submit" class="btn full">Create account</button>
+        <p class="err" id="regErr" role="alert"></p>
+      </form>
+    </div>
+  </main>
+</div>
+
+<script src="js/common.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/login.js"></script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Control Panel - Smart Irrigation System</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app">
+  <aside class="side">
+    <div class="logo">
+      <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path fill="#7fd19b" d="M12 2.5C9 6.6 6 10 6 13.5a6 6 0 0 0 12 0C18 10 15 6.6 12 2.5z"/></svg>
+      <div><b>Smart Irrigation</b><small>Control panel</small></div>
+    </div>
+    <nav class="nav" id="nav">
+      <a href="#overview" data-tab="overview">Overview</a>
+      <a href="#pumps" data-tab="pumps">Pump control</a>
+      <a href="#learning" data-tab="learning">Learning (ML)</a>
+      <a href="#health" data-tab="health">Plant health</a>
+      <a href="#history" data-tab="history">History &amp; logs</a>
+      <a href="#setup" data-tab="setup">Setup</a>
+      <a href="#about" data-tab="about">About project</a>
+    </nav>
+    <div class="side-foot">
+      Logged in as <b id="userName"></b><br>
+      <button class="link light" id="logoutBtn">Log out</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div>
+        <h1 id="pageTitle">Overview</h1>
+        <span id="clock" class="muted small"></span>
+      </div>
+      <div class="top-right">
+        <span id="connPill" class="pill">Not connected</span>
+        <span id="sensorPill" class="pill" hidden></span>
+        <button id="connBtn" class="btn sm">Connect Arduino</button>
+        <button id="demoBtn" class="btn sm ghost">Demo mode</button>
+      </div>
+    </header>
+
+    <div id="demoBar" class="demo-bar" hidden>
+      <b>Demo mode</b>
+      <label>Speed <select id="speedSel"></select></label>
+      <label class="chk"><input type="checkbox" id="farmerChk" checked> Virtual farmer waters by habit</label>
+      <span class="sep"></span>
+      <span class="muted">Test:</span>
+      <button class="btn xs ghost" id="fRain">Rain shower</button>
+      <button class="btn xs ghost" id="fHeat">Heatwave</button>
+      <button class="btn xs ghost" id="fPipe">Block zone 1 pipe</button>
+      <button class="btn xs ghost" id="fSensor">Unplug zone 2 sensor</button>
+      <span class="sep"></span>
+      <button class="btn xs ghost danger" id="demoReset">Reset demo</button>
+    </div>
+
+    <main class="content">
+      <div id="noSource" class="notice">
+        <b>No live data.</b> Plug in the Arduino and press <i>Connect Arduino</i> (Chrome or Edge),
+        or press <i>Demo mode</i> to run a simulated farm where a virtual farmer waters the beds and the system learns the routine.
+        <span id="serialNote" hidden><br>This browser has no Web Serial support, so only demo mode works here.</span>
+      </div>
+
+      <!-- OVERVIEW -->
+      <section id="tab-overview" class="tab-pane">
+        <div class="grid stats">
+          <div class="card stat"><span class="label">Air temperature</span><div class="big"><span id="ovTemp">--</span><span class="unit">°C</span></div><span class="muted small">LM35</span></div>
+          <div class="card stat"><span class="label">Light</span><div class="big" id="ovLdr">--</div><span class="muted small" id="ovLdrNote">LDR, 0-1023</span></div>
+          <div class="card stat"><span class="label">Zones on automatic</span><div class="big" id="ovAuto">--</div><span class="muted small" id="ovAutoNote"></span></div>
+          <div class="card stat" id="ovAlertsCard"><span class="label">Active alerts</span><div class="big" id="ovAlerts">0</div><span class="muted small">see Plant health</span></div>
+        </div>
+        <div class="grid two" id="ovZones"></div>
+        <div class="grid two" id="ovCharts"></div>
+        <div class="card">
+          <div class="card-head"><h3>Recent activity</h3><a href="#history" class="small">full log</a></div>
+          <ul class="activity" id="ovActivity"></ul>
+        </div>
+      </section>
+
+      <!-- PUMPS -->
+      <section id="tab-pumps" class="tab-pane" hidden>
+        <p class="page-note">Use the buttons like a normal pump switch. Every manual watering is recorded and used to learn
+          the routine. Once a time has been seen on 3 days, <b>Automatic mode</b> can take over.</p>
+        <div class="grid two" id="pumpZones"></div>
+        <div class="card row-card">
+          <div><b>Emergency stop</b><br><span class="muted small">Switch every pump off now. The Arduino also stops pumps on its own if this page closes or the cable is pulled.</span></div>
+          <button class="btn red" id="stopAll">Stop all pumps</button>
+        </div>
+      </section>
+
+      <!-- LEARNING -->
+      <section id="tab-learning" class="tab-pane" hidden>
+        <p class="page-note">How the system learns: <b>(1)</b> start times of manual waterings are grouped into time slots (clustering);
+          a slot repeated on 3+ days with a spread under 35 min becomes a <i>learned time</i>.
+          <b>(2)</b> A logistic regression model learns the chance that the farmer waters at a given time, moisture, temperature and light.
+          <b>(3)</b> A KNN classifier checks if the bed behaves like the crop selected in Setup.</p>
+        <div class="stack" id="learnZones"></div>
+      </section>
+
+      <!-- HEALTH -->
+      <section id="tab-health" class="tab-pane" hidden>
+        <p class="page-note">The health score starts at 100 and loses points for soil outside the crop's range, heat or cold stress,
+          pump faults and drying that is unusual compared with what this bed normally does at that hour.</p>
+        <div class="grid two" id="healthZones"></div>
+      </section>
+
+      <!-- HISTORY -->
+      <section id="tab-history" class="tab-pane" hidden>
+        <div class="card">
+          <h3>Event log</h3>
+          <div class="table-scroll"><table class="tbl" id="logTable"></table></div>
+        </div>
+        <div class="card">
+          <h3>Serial monitor</h3>
+          <pre class="log" id="serialLog"></pre>
+        </div>
+      </section>
+
+      <!-- SETUP -->
+      <section id="tab-setup" class="tab-pane" hidden>
+        <div class="grid two" id="setupZones"></div>
+        <div class="card">
+          <h3>Data</h3>
+          <p class="muted small" id="storeInfo"></p>
+          <div class="btn-row left">
+            <button class="btn sm ghost" id="exportBtn">Export backup (.json)</button>
+            <label class="btn sm ghost file-btn">Import backup<input type="file" id="importFile" accept=".json,application/json"></label>
+            <button class="btn sm ghost danger" id="clearAll">Delete all data</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Hardware</h3>
+          <table class="tbl compact">
+            <tr><th>Part</th><th>Arduino pin</th></tr>
+            <tr><td>LDR (voltage divider with 10k)</td><td>A0</td></tr>
+            <tr><td>Soil moisture sensor, zone 1</td><td>A1</td></tr>
+            <tr><td>LM35 temperature sensor</td><td>A2</td></tr>
+            <tr><td>Soil moisture sensor, zone 2</td><td>A3</td></tr>
+            <tr><td>Relay channel 1 → pump 1</td><td>D7</td></tr>
+            <tr><td>Relay channel 2 → pump 2</td><td>D8</td></tr>
+          </table>
+          <p class="muted small">USB serial, 9600 baud. Sketch: <code>arduino/smart_irrigation/smart_irrigation.ino</code></p>
+        </div>
+      </section>
+
+      <!-- ABOUT -->
+      <section id="tab-about" class="tab-pane" hidden>
+        <div class="card prose">
+          <h3>Smart Irrigation System using Arduino and Machine Learning</h3>
+          <p><b>Problem.</b> Most small farms are watered by hand on fixed timings. Plants get too much water on
+            cloudy days and too little on hot ones, pumps are left running when the tank is empty, and if the farmer is away
+            nobody waters at all. Fully automatic timers exist but have to be programmed and do not adjust to the crop.</p>
+          <p><b>Idea.</b> Let the farmer keep working the way they already do. The system watches the manual switching for a few
+            days, learns their timings for each bed, and then takes over. While it runs it keeps checking the soil, the weather
+            and the pump so it can skip, add or stop a watering, much like a caretaker would.</p>
+
+          <h4>Block diagram</h4>
+          <svg viewBox="0 0 760 230" class="diagram" role="img" aria-label="Block diagram: sensors to Arduino to dashboard to relay and pumps">
+            <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#4a5a50"/></marker></defs>
+            <g font-size="13" fill="#1e2b22">
+              <rect x="10" y="20" width="150" height="190" rx="8" fill="#eef5f0" stroke="#9cc3a9"/>
+              <text x="85" y="44" text-anchor="middle" font-weight="700">Sensors</text>
+              <text x="85" y="78" text-anchor="middle">Soil moisture ×2</text>
+              <text x="85" y="106" text-anchor="middle">LM35 temperature</text>
+              <text x="85" y="134" text-anchor="middle">LDR light</text>
+              <rect x="220" y="70" width="140" height="90" rx="8" fill="#e8f0f8" stroke="#96b8da"/>
+              <text x="290" y="104" text-anchor="middle" font-weight="700">Arduino UNO</text>
+              <text x="290" y="126" text-anchor="middle" font-size="12">safety cut-offs,</text>
+              <text x="290" y="142" text-anchor="middle" font-size="12">offline care</text>
+              <rect x="420" y="40" width="170" height="150" rx="8" fill="#fff8e8" stroke="#dcc28a"/>
+              <text x="505" y="66" text-anchor="middle" font-weight="700">Web dashboard</text>
+              <text x="505" y="92" text-anchor="middle" font-size="12">schedule learner</text>
+              <text x="505" y="112" text-anchor="middle" font-size="12">logistic regression</text>
+              <text x="505" y="132" text-anchor="middle" font-size="12">KNN crop check</text>
+              <text x="505" y="152" text-anchor="middle" font-size="12">health monitor</text>
+              <text x="505" y="172" text-anchor="middle" font-size="12">login + control</text>
+              <rect x="640" y="30" width="110" height="70" rx="8" fill="#f3f3f3" stroke="#bbb"/>
+              <text x="695" y="62" text-anchor="middle" font-weight="700">2-ch relay</text>
+              <text x="695" y="80" text-anchor="middle" font-size="12">5 V module</text>
+              <rect x="640" y="140" width="110" height="70" rx="8" fill="#e8f0f8" stroke="#96b8da"/>
+              <text x="695" y="172" text-anchor="middle" font-weight="700">Pumps</text>
+              <text x="695" y="190" text-anchor="middle" font-size="12">zone 1, zone 2</text>
+            </g>
+            <g stroke="#4a5a50" stroke-width="1.6" fill="none">
+              <path d="M160 115H218" marker-end="url(#ar)"/>
+              <path d="M360 100H418" marker-end="url(#ar)"/>
+              <path d="M418 132H362" marker-end="url(#ar)"/>
+              <path d="M360 90 Q 500 0 638 60" marker-end="url(#ar)"/>
+              <path d="M695 100V138" marker-end="url(#ar)"/>
+            </g>
+            <g font-size="11" fill="#5d6b62">
+              <text x="389" y="94" text-anchor="middle">DATA</text>
+              <text x="389" y="148" text-anchor="middle">ON/OFF</text>
+              <text x="520" y="22" text-anchor="middle">D7 / D8</text>
+            </g>
+          </svg>
+
+          <h4>How one decision is made (every minute)</h4>
+          <ol>
+            <li><b>Safety first:</b> stop a pump if moisture has not risen after 5 min (dry run / blocked pipe) or the max run time is reached. A moisture reading stuck at 0 pauses that zone.</li>
+            <li><b>Wilting point:</b> if the soil is below the crop's critical level, water now.</li>
+            <li><b>Learned time:</b> if it is one of the farmer's learned times, water, unless the soil is already moist (e.g. after rain), then skip and log it.</li>
+            <li><b>Model:</b> if the logistic regression gives over 60% chance that the farmer would water now and the soil is below mid-range, water.</li>
+            <li><b>Top-up:</b> if the soil has stayed below the ideal range for 45 min, give a short top-up, but not between 11:00 and 16:00 (evaporation) or at night (fungus).</li>
+          </ol>
+          <p>A watering stops when the target moisture is reached. If the farmer switches the pump by hand it is recorded as a new example, so the schedule keeps following them. If they cancel an automatic watering within 5 minutes, that run is marked as unwanted and not learned.</p>
+
+          <h4>Components</h4>
+          <table class="tbl compact">
+            <tr><th>Part</th><th>Qty</th><th>Use</th></tr>
+            <tr><td>Arduino UNO</td><td>1</td><td>reads sensors, drives relays, safety cut-offs</td></tr>
+            <tr><td>Capacitive soil moisture sensor v1.2</td><td>2</td><td>one per bed (does not corrode like the fork type)</td></tr>
+            <tr><td>LM35</td><td>1</td><td>air temperature</td></tr>
+            <tr><td>LDR + 10 kΩ resistor</td><td>1</td><td>sunlight</td></tr>
+            <tr><td>2-channel 5 V relay module</td><td>1</td><td>switch the pumps</td></tr>
+            <tr><td>DC submersible pump 3-6 V (or pump contactor)</td><td>2</td><td>water delivery</td></tr>
+            <tr><td>Laptop / Raspberry Pi with Chrome</td><td>1</td><td>runs this dashboard</td></tr>
+          </table>
+
+          <h4>Limitations / future work</h4>
+          <ul>
+            <li>The laptop has to stay on for learning and automatic mode. The Arduino only does basic "offline care" without it. An ESP32 with Wi-Fi could host the dashboard instead.</li>
+            <li>Crop check only uses water behaviour. A camera with a leaf disease model would give a real health check.</li>
+            <li>A weather forecast API could skip waterings before expected rain.</li>
+            <li>Data is stored in the browser. A small server database would allow several farms and phones.</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<div id="toast" class="toast" role="status"></div>
+
+<script src="js/common.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/crops.js"></script>
+<script src="js/ml.js"></script>
+<script src="js/hardware.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
